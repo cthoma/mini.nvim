@@ -508,8 +508,12 @@ MiniAi.config = {
     inside_last = 'il',
 
     -- Move cursor to corresponding edge of `a` textobject
-    goto_left = 'g[',
-    goto_right = 'g]',
+    goto_left_around = '',
+    goto_right_around = '',
+
+    -- Move cursor to corresponding edge of `i` textobject
+    goto_left_inside = '',
+    goto_right_inside = '',
   },
 
   -- Number of lines within which textobject is searched
@@ -1113,8 +1117,10 @@ H.setup_config = function(config)
     ['mappings.inside_next'] = { config.mappings.inside_next, 'string' },
     ['mappings.around_last'] = { config.mappings.around_last, 'string' },
     ['mappings.inside_last'] = { config.mappings.inside_last, 'string' },
-    ['mappings.goto_left'] = { config.mappings.goto_left, 'string' },
-    ['mappings.goto_right'] = { config.mappings.goto_right, 'string' },
+    ['mappings.goto_left_around'] = { config.mappings.goto_left_around, 'string' },
+    ['mappings.goto_right_around'] = { config.mappings.goto_right_around, 'string' },
+    ['mappings.goto_left_inside'] = { config.mappings.goto_left_inside, 'string' },
+    ['mappings.goto_right_inside'] = { config.mappings.goto_right_inside, 'string' },
   })
 
   return config
@@ -1133,8 +1139,11 @@ H.apply_config = function(config)
     H.map(mode, lhs, rhs, opts)
   end
 
-  m({ 'n', 'x', 'o' }, maps.goto_left,  function() return H.expr_motion('left') end,   { desc = 'Move to left "around"' })
-  m({ 'n', 'x', 'o' }, maps.goto_right, function() return H.expr_motion('right') end,  { desc = 'Move to right "around"' })
+  m({ 'n', 'x', 'o' }, maps.goto_left_around,  function() return H.expr_motion('left', 'a') end,   { desc = 'Move to left "around"' })
+  m({ 'n', 'x', 'o' }, maps.goto_right_around, function() return H.expr_motion('right', 'a') end,  { desc = 'Move to right "around"' })
+
+  m({ 'n', 'x', 'o' }, maps.goto_left_inside,  function() return H.expr_motion('left', 'i') end,   { desc = 'Move to left "inside"' })
+  m({ 'n', 'x', 'o' }, maps.goto_right_inside, function() return H.expr_motion('right', 'i') end,  { desc = 'Move to right "inside"' })
 
   local make_tobj = function(mode, ai_type, search_method)
     return function() return H.expr_textobject(mode, ai_type, { search_method = search_method }) end
@@ -1233,13 +1242,13 @@ H.expr_textobject = function(mode, ai_type, opts)
     .. '<CR>'
 end
 
-H.expr_motion = function(side)
+H.expr_motion = function(side, ai_type)
   if H.is_disabled() then return '' end
 
   if not (side == 'left' or side == 'right') then H.error([[`side` should be one of 'left' or 'right'.]]) end
 
   -- Get user input
-  local tobj_id = H.user_textobject_id('a')
+  local tobj_id = H.user_textobject_id(ai_type)
   if tobj_id == nil then return end
 
   -- Clear cache
@@ -1248,8 +1257,9 @@ H.expr_motion = function(side)
   -- Make expression for moving cursor
   return '<Cmd>lua '
     .. string.format(
-      [[MiniAi.move_cursor('%s', 'a', '%s', { n_times = %d })]],
+      [[MiniAi.move_cursor('%s', '%s', '%s', { n_times = %d })]],
       side,
+      ai_type,
       vim.fn.escape(tobj_id, "'"),
       vim.v.count1
     )
