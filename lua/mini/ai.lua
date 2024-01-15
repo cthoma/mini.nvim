@@ -1133,8 +1133,8 @@ H.apply_config = function(config)
     H.map(mode, lhs, rhs, opts)
   end
 
-  m({ 'n', 'x', 'o' }, maps.goto_left,  function() return H.expr_motion('left') end,   { desc = 'Move to left "around"' })
-  m({ 'n', 'x', 'o' }, maps.goto_right, function() return H.expr_motion('right') end,  { desc = 'Move to right "around"' })
+  m({ 'n', 'x', 'o' }, maps.goto_left,  function() return H.expr_motion('left', 'a') end,   { desc = 'Move to left "around"' })
+  m({ 'n', 'x', 'o' }, maps.goto_right, function() return H.expr_motion('right', 'a') end,  { desc = 'Move to right "around"' })
 
   local make_tobj = function(mode, ai_type, search_method)
     return function() return H.expr_textobject(mode, ai_type, { search_method = search_method }) end
@@ -1233,13 +1233,13 @@ H.expr_textobject = function(mode, ai_type, opts)
     .. '<CR>'
 end
 
-H.expr_motion = function(side)
+H.expr_motion = function(side, ai_type)
   if H.is_disabled() then return '' end
 
   if not (side == 'left' or side == 'right') then H.error([[`side` should be one of 'left' or 'right'.]]) end
 
   -- Get user input
-  local tobj_id = H.user_textobject_id('a')
+  local tobj_id = H.user_textobject_id(ai_type)
   if tobj_id == nil then return end
 
   -- Clear cache
@@ -1248,8 +1248,9 @@ H.expr_motion = function(side)
   -- Make expression for moving cursor
   return '<Cmd>lua '
     .. string.format(
-      [[MiniAi.move_cursor('%s', 'a', '%s', { n_times = %d })]],
+      [[MiniAi.move_cursor('%s', '%s', '%s', { n_times = %d })]],
       side,
+      ai_type,
       vim.fn.escape(tobj_id, "'"),
       vim.v.count1
     )
